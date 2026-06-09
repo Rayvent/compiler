@@ -516,7 +516,7 @@
 
     <div class="file-panel" id="filePanel">
       <span id="fileName">Файл не добавлен</span>
-      <button id="deleteFileBtn">Удалить</button>
+      <button id="deleteFileBtn">Delete</button>
     </div>
 
     <main class="editor-wrap">
@@ -695,11 +695,6 @@
 
       fileName.textContent = `Добавлен: ${file.name}`;
       filePanel.classList.add("show");
-
-      showConsole(
-        `Файл "${file.name}" добавлен.\nТеперь можно использовать:\n\nf = open("${file.name}").readline()\nprint(f)`,
-        false
-      );
 
       fileInput.value = "";
       setAppHeight();
