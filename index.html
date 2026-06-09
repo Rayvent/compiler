@@ -693,11 +693,11 @@
         writeCurrentFileToPyodide();
       }
 
-      fileName.textContent = `Добавлен: ${file.name}`;
+      fileName.textContent = `Loaded: ${file.name}`;
       filePanel.classList.add("show");
 
       showConsole(
-        `Файл "${file.name}" добавлен.`,
+        `File loaded: ${file.name}`,
         false
       );
 
@@ -715,10 +715,10 @@
       currentFileName = null;
       currentFileData = null;
 
-      fileName.textContent = "Файл не добавлен";
+      fileName.textContent = "No file loaded";
       filePanel.classList.remove("show");
 
-      showConsole("Файл удалён.", false);
+      showConsole("File deleted.", false);
       setAppHeight();
     };
 
