@@ -699,6 +699,11 @@
       fileInput.value = "";
       setAppHeight();
     };
+    showConsole(
+      `Файл "${file.name}" добавлен.`,
+      false
+    );
+    
 
     deleteFileBtn.onclick = () => {
       if (pyodide && currentFileName) {
