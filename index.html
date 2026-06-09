@@ -2,7 +2,13 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+  <!-- maximum-scale=1 убирает автоприближение на iPhone при фокусе поля ввода -->
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+  />
+
   <title>Python Compiler</title>
 
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.css">
@@ -20,7 +26,7 @@
     }
 
     :root {
-      --vh: 100vh;
+      --app-height: 100dvh;
       --bg: #0b1117;
       --panel: #121b24;
       --line: #25384a;
@@ -29,15 +35,39 @@
       --text: #e8f1f8;
       --muted: #7f93a8;
       --error: #ff6b6b;
+
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-right: env(safe-area-inset-right, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --safe-left: env(safe-area-inset-left, 0px);
+
+      --app-pad: 16px;
+      --gap: 14px;
+      --topbar-h: 56px;
+      --radius: 22px;
+      --console-max-h: min(42dvh, 340px);
+    }
+
+    html,
+    body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      min-height: 100%;
+      background: var(--bg);
+      overflow: hidden;
+      overscroll-behavior: none;
+      touch-action: manipulation;
+      -webkit-text-size-adjust: 100%;
     }
 
     body {
-      margin: 0;
-      height: var(--vh);
+      height: var(--app-height);
       background: radial-gradient(circle at top, #172636, var(--bg));
       color: var(--text);
       font-family: Inter, Arial, sans-serif;
-      overflow: hidden;
+      position: fixed;
+      inset: 0;
     }
 
     .loader {
@@ -48,6 +78,11 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      padding:
+        calc(16px + var(--safe-top))
+        calc(16px + var(--safe-right))
+        calc(16px + var(--safe-bottom))
+        calc(16px + var(--safe-left));
       transition: opacity .45s ease, visibility .45s ease;
     }
 
@@ -82,15 +117,23 @@
     }
 
     .app {
-      height: var(--vh);
+      width: 100%;
+      height: var(--app-height);
+      min-height: 0;
       display: flex;
       flex-direction: column;
-      padding: 16px;
-      gap: 14px;
+      padding:
+        calc(var(--app-pad) + var(--safe-top))
+        calc(var(--app-pad) + var(--safe-right))
+        calc(var(--app-pad) + var(--safe-bottom))
+        calc(var(--app-pad) + var(--safe-left));
+      gap: var(--gap);
+      overflow: hidden;
     }
 
     .topbar {
-      height: 56px;
+      height: var(--topbar-h);
+      min-height: var(--topbar-h);
       background: rgba(18, 27, 36, .9);
       border: 1px solid var(--line);
       border-radius: 18px;
@@ -100,34 +143,39 @@
       padding: 0 14px 0 18px;
       flex-shrink: 0;
       backdrop-filter: blur(14px);
+      overflow: hidden;
     }
 
     .logo {
       font-size: 20px;
       font-weight: 950;
       white-space: nowrap;
+      min-width: 0;
     }
 
     .actions {
       display: flex;
       align-items: center;
       gap: 8px;
+      flex-shrink: 0;
     }
 
     button {
       font-family: inherit;
       -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
     }
 
     .run-btn {
       border: none;
       background: linear-gradient(135deg, var(--green), var(--green2));
       color: #07110b;
-      padding: 12px 22px;
+      height: 44px;
+      padding: 0 22px;
       border-radius: 14px;
       font-weight: 950;
       cursor: pointer;
-      font-size: 15px;
+      font-size: 16px;
       transition: transform .2s ease, opacity .2s ease;
     }
 
@@ -144,10 +192,12 @@
       border: 1px solid var(--line);
       background: #182634;
       color: var(--text);
-      padding: 11px 15px;
+      height: 44px;
+      padding: 0 15px;
       border-radius: 14px;
       font-weight: 900;
       cursor: pointer;
+      font-size: 16px;
     }
 
     .small-btn.clear {
@@ -161,20 +211,31 @@
     .editor-wrap {
       flex: 1;
       min-height: 0;
+      width: 100%;
       background: var(--panel);
       border: 1px solid var(--line);
-      border-radius: 22px;
+      border-radius: var(--radius);
       overflow: hidden;
       position: relative;
     }
 
     .CodeMirror {
+      width: 100%;
       height: 100%;
       font-family: Consolas, Monaco, monospace;
       font-size: 16px;
       line-height: 1.55;
       background: #101820 !important;
       color: var(--text);
+    }
+
+    .CodeMirror-scroll {
+      max-height: 100%;
+      overscroll-behavior: contain;
+    }
+
+    .CodeMirror-sizer {
+      min-height: 100%;
     }
 
     .CodeMirror-gutters {
@@ -209,10 +270,10 @@
 
     .console {
       position: fixed;
-      left: 16px;
-      right: 16px;
-      bottom: 16px;
-      max-height: 42vh;
+      left: calc(var(--app-pad) + var(--safe-left));
+      right: calc(var(--app-pad) + var(--safe-right));
+      bottom: calc(var(--app-pad) + var(--safe-bottom));
+      max-height: var(--console-max-h);
       background: #07110d;
       border: 1px solid rgba(74, 222, 128, .35);
       border-radius: 22px;
@@ -237,6 +298,7 @@
 
     .console-head {
       height: 48px;
+      min-height: 48px;
       background: #102017;
       display: flex;
       align-items: center;
@@ -260,6 +322,7 @@
       color: white;
       font-size: 20px;
       cursor: pointer;
+      flex-shrink: 0;
     }
 
     pre {
@@ -267,11 +330,12 @@
       padding: 16px;
       white-space: pre-wrap;
       overflow: auto;
-      max-height: calc(42vh - 48px);
+      max-height: calc(var(--console-max-h) - 48px);
       color: #c8ffd8;
       font-family: Consolas, Monaco, monospace;
       font-size: 14px;
       line-height: 1.5;
+      overscroll-behavior: contain;
     }
 
     .console.error pre {
@@ -279,16 +343,18 @@
     }
 
     @media (max-width: 700px) {
-      .app {
-        padding: 10px;
-        gap: 10px;
+      :root {
+        --app-pad: 10px;
+        --gap: 10px;
+        --topbar-h: 52px;
+        --radius: 18px;
+        --console-max-h: min(38dvh, 280px);
       }
 
       .topbar {
-        height: 52px;
         border-radius: 16px;
-        padding-left: 14px;
-        padding-right: 10px;
+        padding-left: 12px;
+        padding-right: 8px;
       }
 
       .logo {
@@ -304,45 +370,68 @@
       }
 
       .small-btn {
-        padding: 10px 10px;
-        font-size: 12px;
+        height: 40px;
+        padding: 0 10px;
+        font-size: 16px;
       }
 
       .run-btn {
-        padding: 10px 14px;
-        font-size: 13px;
-      }
-
-      .editor-wrap {
-        border-radius: 18px;
+        height: 40px;
+        padding: 0 14px;
+        font-size: 16px;
       }
 
       .CodeMirror {
-        font-size: 15px;
+        font-size: 16px;
       }
 
       .console {
-        left: 10px;
-        right: 10px;
-        bottom: 10px;
-        max-height: 45vh;
         border-radius: 18px;
       }
 
       pre {
-        max-height: calc(45vh - 48px);
+        font-size: 13px;
       }
     }
 
-    @media (max-width: 420px) {
+    @media (max-width: 430px) {
       .logo {
         font-size: 14px;
+      }
+
+      .small-btn {
+        padding: 0 8px;
+      }
+
+      .run-btn {
+        padding: 0 12px;
       }
 
       .small-btn.clear {
         max-width: 74px;
         overflow: hidden;
         white-space: nowrap;
+      }
+    }
+
+    @media (max-width: 370px) {
+      .logo {
+        display: none;
+      }
+
+      .topbar {
+        justify-content: flex-end;
+      }
+
+      .actions {
+        width: 100%;
+        justify-content: space-between;
+      }
+
+      .small-btn,
+      .run-btn {
+        flex: 1;
+        padding: 0 6px;
       }
     }
   </style>
@@ -389,6 +478,7 @@
 
     let pyodide = null;
     let mobilePairLock = false;
+    let initialHeight = window.innerHeight;
 
     const editor = CodeMirror.fromTextArea(document.getElementById("code"), {
       mode: "python",
@@ -399,8 +489,9 @@
       tabSize: 4,
       indentWithTabs: false,
       lineWrapping: false,
-      autofocus: true,
+      autofocus: false,
       styleActiveLine: true,
+      viewportMargin: Infinity,
       extraKeys: {
         Tab: function(cm) {
           cm.replaceSelection("    ");
@@ -558,23 +649,60 @@ result_error = stderr_buffer.getvalue()
       editor.focus();
     };
 
-    function fixMobileViewport() {
-      const height = window.visualViewport
-        ? window.visualViewport.height
-        : window.innerHeight;
+    function setAppHeight() {
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (
+        navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1
+      );
 
-      document.documentElement.style.setProperty("--vh", `${height}px`);
-      editor.refresh();
+      let height;
+
+      if (window.visualViewport) {
+        height = window.visualViewport.height;
+      } else {
+        height = window.innerHeight;
+      }
+
+      /*
+        На iPhone клавиатура меняет visualViewport.
+        Мы меняем только размер рабочей области, а не положение элементов.
+        Так редактор доходит до клавиатуры, но весь UI не уезжает вверх.
+      */
+      if (!height || height < 320) {
+        height = initialHeight;
+      }
+
+      document.documentElement.style.setProperty("--app-height", `${height}px`);
+
+      requestAnimationFrame(() => {
+        editor.setSize("100%", "100%");
+        editor.refresh();
+      });
     }
 
-    fixMobileViewport();
+    setAppHeight();
 
-    window.addEventListener("resize", fixMobileViewport);
+    window.addEventListener("resize", setAppHeight, { passive: true });
+    window.addEventListener("orientationchange", () => {
+      setTimeout(() => {
+        initialHeight = window.innerHeight;
+        setAppHeight();
+      }, 250);
+    });
 
     if (window.visualViewport) {
-      window.visualViewport.addEventListener("resize", fixMobileViewport);
-      window.visualViewport.addEventListener("scroll", fixMobileViewport);
+      window.visualViewport.addEventListener("resize", setAppHeight, { passive: true });
+      window.visualViewport.addEventListener("scroll", setAppHeight, { passive: true });
     }
+
+    document.addEventListener("gesturestart", function(e) {
+      e.preventDefault();
+    });
+
+    document.addEventListener("touchmove", function(e) {
+      if (!e.target.closest(".CodeMirror-scroll") && !e.target.closest("pre")) {
+        e.preventDefault();
+      }
+    }, { passive: false });
   </script>
 </body>
 </html>
