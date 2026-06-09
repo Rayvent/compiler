@@ -434,6 +434,82 @@
         padding: 0 6px;
       }
     }
+
+    /* iPhone button fix */
+    .actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .small-btn,
+    .run-btn {
+      height: 40px;
+      min-width: 0;
+      padding: 0 10px;
+      font-size: 13px;
+      line-height: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .run-btn {
+      font-size: 14px;
+    }
+
+    @media (max-width: 430px) {
+      .topbar {
+        padding-left: 10px;
+        padding-right: 8px;
+      }
+
+      .logo {
+        font-size: 13px;
+      }
+
+      .actions {
+        flex: 1;
+        justify-content: flex-end;
+      }
+
+      .small-btn,
+      .run-btn {
+        height: 38px;
+        padding: 0 8px;
+        font-size: 12px;
+        border-radius: 12px;
+      }
+
+      .small-btn.clear {
+        max-width: 64px;
+      }
+    }
+
+    @media (max-width: 370px) {
+      .logo {
+        display: none;
+      }
+
+      .actions {
+        width: 100%;
+        justify-content: space-between;
+      }
+
+      .small-btn,
+      .run-btn {
+        flex: 1;
+        max-width: none;
+        padding: 0 5px;
+        font-size: 11px;
+      }
+
+      .small-btn.clear {
+        max-width: none;
+      }
+    }
+
   </style>
 </head>
 
@@ -448,7 +524,7 @@
 
       <div class="actions">
         <button class="small-btn" id="tabBtn">Tab</button>
-        <button class="small-btn clear" id="clearBtn">Очистить</button>
+        <button class="small-btn clear" id="clearBtn">Clear</button>
         <button class="run-btn" id="runBtn">Run</button>
       </div>
     </header>
