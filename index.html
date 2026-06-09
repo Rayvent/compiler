@@ -19,6 +19,7 @@
   <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/display/placeholder.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/selection/active-line.js"></script>
   <script src="https://cdn.jsdelivr.net/pyodide/v0.29.3/full/pyodide.js"></script>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
   <style>
     * {
@@ -779,6 +780,12 @@ result_error = stderr_buffer.getvalue()
         e.preventDefault();
       }
     }, { passive: false });
+
+    const tg = window.Telegram.WebApp;
+
+    tg.ready();
+    tg.expand();
+    
   </script>
 </body>
 </html>
