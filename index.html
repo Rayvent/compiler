@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8" />
 
-  <!-- maximum-scale=1 убирает автоприближение на iPhone при фокусе поля ввода -->
   <meta
     name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
@@ -19,7 +18,6 @@
   <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/display/placeholder.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/selection/active-line.js"></script>
   <script src="https://cdn.jsdelivr.net/pyodide/v0.29.3/full/pyodide.js"></script>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
   <style>
     * {
@@ -36,6 +34,7 @@
       --text: #e8f1f8;
       --muted: #7f93a8;
       --error: #ff6b6b;
+      --danger: #ef4444;
 
       --safe-top: env(safe-area-inset-top, 0px);
       --safe-right: env(safe-area-inset-right, 0px);
@@ -157,7 +156,8 @@
     .actions {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
+      min-width: 0;
       flex-shrink: 0;
     }
 
@@ -167,16 +167,26 @@
       touch-action: manipulation;
     }
 
+    .small-btn,
+    .run-btn {
+      height: 40px;
+      min-width: 0;
+      padding: 0 10px;
+      font-size: 13px;
+      line-height: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      border-radius: 14px;
+      font-weight: 950;
+      cursor: pointer;
+    }
+
     .run-btn {
       border: none;
       background: linear-gradient(135deg, var(--green), var(--green2));
       color: #07110b;
-      height: 44px;
-      padding: 0 22px;
-      border-radius: 14px;
-      font-weight: 950;
-      cursor: pointer;
-      font-size: 16px;
+      font-size: 14px;
       transition: transform .2s ease, opacity .2s ease;
     }
 
@@ -193,12 +203,6 @@
       border: 1px solid var(--line);
       background: #182634;
       color: var(--text);
-      height: 44px;
-      padding: 0 15px;
-      border-radius: 14px;
-      font-weight: 900;
-      cursor: pointer;
-      font-size: 16px;
     }
 
     .small-btn.clear {
@@ -207,6 +211,46 @@
 
     #tabBtn {
       display: none;
+    }
+
+    .file-panel {
+      min-height: 44px;
+      background: rgba(18, 27, 36, .9);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px;
+      gap: 10px;
+      font-size: 14px;
+      color: var(--text);
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+
+    .file-panel.show {
+      display: flex;
+    }
+
+    #fileName {
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      min-width: 0;
+    }
+
+    #deleteFileBtn {
+      border: none;
+      background: var(--danger);
+      color: white;
+      height: 32px;
+      padding: 0 12px;
+      border-radius: 10px;
+      font-weight: 900;
+      cursor: pointer;
+      flex-shrink: 0;
+      font-size: 13px;
     }
 
     .editor-wrap {
@@ -354,7 +398,7 @@
 
       .topbar {
         border-radius: 16px;
-        padding-left: 12px;
+        padding-left: 10px;
         padding-right: 8px;
       }
 
@@ -362,28 +406,35 @@
         font-size: 16px;
       }
 
-      .actions {
-        gap: 6px;
-      }
-
       #tabBtn {
         display: inline-block;
       }
 
-      .small-btn {
-        height: 40px;
-        padding: 0 10px;
-        font-size: 16px;
+      .small-btn,
+      .run-btn {
+        height: 38px;
+        padding: 0 8px;
+        font-size: 12px;
+        border-radius: 12px;
       }
 
       .run-btn {
-        height: 40px;
-        padding: 0 14px;
-        font-size: 16px;
+        font-size: 13px;
       }
 
       .CodeMirror {
         font-size: 16px;
+      }
+
+      .file-panel {
+        min-height: 40px;
+        font-size: 13px;
+      }
+
+      #deleteFileBtn {
+        height: 30px;
+        padding: 0 10px;
+        font-size: 12px;
       }
 
       .console {
@@ -395,77 +446,7 @@
       }
     }
 
-    @media (max-width: 430px) {
-      .logo {
-        font-size: 14px;
-      }
-
-      .small-btn {
-        padding: 0 8px;
-      }
-
-      .run-btn {
-        padding: 0 12px;
-      }
-
-      .small-btn.clear {
-        max-width: 74px;
-        overflow: hidden;
-        white-space: nowrap;
-      }
-    }
-
-    @media (max-width: 370px) {
-      .logo {
-        display: none;
-      }
-
-      .topbar {
-        justify-content: flex-end;
-      }
-
-      .actions {
-        width: 100%;
-        justify-content: space-between;
-      }
-
-      .small-btn,
-      .run-btn {
-        flex: 1;
-        padding: 0 6px;
-      }
-    }
-
-    /* iPhone button fix */
-    .actions {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      min-width: 0;
-    }
-
-    .small-btn,
-    .run-btn {
-      height: 40px;
-      min-width: 0;
-      padding: 0 10px;
-      font-size: 13px;
-      line-height: 1;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .run-btn {
-      font-size: 14px;
-    }
-
-    @media (max-width: 430px) {
-      .topbar {
-        padding-left: 10px;
-        padding-right: 8px;
-      }
-
+    @media (max-width: 470px) {
       .logo {
         font-size: 13px;
       }
@@ -477,20 +458,22 @@
 
       .small-btn,
       .run-btn {
-        height: 38px;
-        padding: 0 8px;
-        font-size: 12px;
-        border-radius: 12px;
+        padding: 0 7px;
+        font-size: 11px;
       }
 
       .small-btn.clear {
-        max-width: 64px;
+        max-width: 56px;
       }
     }
 
-    @media (max-width: 370px) {
+    @media (max-width: 390px) {
       .logo {
         display: none;
+      }
+
+      .topbar {
+        justify-content: flex-end;
       }
 
       .actions {
@@ -510,7 +493,6 @@
         max-width: none;
       }
     }
-
   </style>
 </head>
 
@@ -524,11 +506,18 @@
       <div class="logo">Python<span>Run</span></div>
 
       <div class="actions">
+        <input type="file" id="fileInput" hidden>
+        <button class="small-btn" id="fileBtn">Файл</button>
         <button class="small-btn" id="tabBtn">Tab</button>
         <button class="small-btn clear" id="clearBtn">Clear</button>
         <button class="run-btn" id="runBtn">Run</button>
       </div>
     </header>
+
+    <div class="file-panel" id="filePanel">
+      <span id="fileName">Файл не добавлен</span>
+      <button id="deleteFileBtn">Удалить</button>
+    </div>
 
     <main class="editor-wrap">
       <textarea id="code" placeholder="print('hello world!')"></textarea>
@@ -553,9 +542,17 @@
     const clearBtn = document.getElementById("clearBtn");
     const consoleTitle = document.getElementById("consoleTitle");
 
+    const fileInput = document.getElementById("fileInput");
+    const fileBtn = document.getElementById("fileBtn");
+    const filePanel = document.getElementById("filePanel");
+    const fileName = document.getElementById("fileName");
+    const deleteFileBtn = document.getElementById("deleteFileBtn");
+
     let pyodide = null;
     let mobilePairLock = false;
     let initialHeight = window.innerHeight;
+    let currentFileName = null;
+    let currentFileData = null;
 
     const editor = CodeMirror.fromTextArea(document.getElementById("code"), {
       mode: "python",
@@ -639,6 +636,10 @@
         pyodide = await loadPyodide();
         runBtn.disabled = false;
         loader.classList.add("hide");
+
+        if (currentFileName && currentFileData) {
+          writeCurrentFileToPyodide();
+        }
       } catch (err) {
         loader.classList.add("hide");
         showConsole("Ошибка загрузки Python:\n" + String(err), true);
@@ -658,6 +659,69 @@
       consoleBox.classList.remove("show");
     };
 
+    function writeCurrentFileToPyodide() {
+      if (!pyodide || !currentFileName || !currentFileData) return;
+
+      try {
+        pyodide.FS.writeFile(currentFileName, currentFileData);
+      } catch (err) {
+        showConsole("Ошибка записи файла в Python:\n" + String(err), true);
+      }
+    }
+
+    fileBtn.onclick = () => {
+      fileInput.click();
+    };
+
+    fileInput.onchange = async () => {
+      const file = fileInput.files[0];
+      if (!file) return;
+
+      const buffer = await file.arrayBuffer();
+      const data = new Uint8Array(buffer);
+
+      if (pyodide && currentFileName) {
+        try {
+          pyodide.FS.unlink(currentFileName);
+        } catch (_) {}
+      }
+
+      currentFileName = file.name;
+      currentFileData = data;
+
+      if (pyodide) {
+        writeCurrentFileToPyodide();
+      }
+
+      fileName.textContent = `Добавлен: ${file.name}`;
+      filePanel.classList.add("show");
+
+      showConsole(
+        `Файл "${file.name}" добавлен.\nТеперь можно использовать:\n\nf = open("${file.name}").readline()\nprint(f)`,
+        false
+      );
+
+      fileInput.value = "";
+      setAppHeight();
+    };
+
+    deleteFileBtn.onclick = () => {
+      if (pyodide && currentFileName) {
+        try {
+          pyodide.FS.unlink(currentFileName);
+        } catch (_) {}
+      }
+
+      currentFileName = null;
+      currentFileData = null;
+
+      fileName.textContent = "Файл не добавлен";
+      filePanel.classList.remove("show");
+
+      showConsole("Файл удалён.", false);
+      setAppHeight();
+    };
+
     runBtn.onclick = async () => {
       if (!pyodide) return;
 
@@ -671,6 +735,8 @@
         runBtn.disabled = false;
         return;
       }
+
+      writeCurrentFileToPyodide();
 
       try {
         pyodide.globals.set("user_code", userCode);
@@ -727,10 +793,6 @@ result_error = stderr_buffer.getvalue()
     };
 
     function setAppHeight() {
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (
-        navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1
-      );
-
       let height;
 
       if (window.visualViewport) {
@@ -739,11 +801,6 @@ result_error = stderr_buffer.getvalue()
         height = window.innerHeight;
       }
 
-      /*
-        На iPhone клавиатура меняет visualViewport.
-        Мы меняем только размер рабочей области, а не положение элементов.
-        Так редактор доходит до клавиатуры, но весь UI не уезжает вверх.
-      */
       if (!height || height < 320) {
         height = initialHeight;
       }
@@ -780,12 +837,6 @@ result_error = stderr_buffer.getvalue()
         e.preventDefault();
       }
     }, { passive: false });
-
-    const tg = window.Telegram.WebApp;
-
-    tg.ready();
-    tg.expand();
-    
   </script>
 </body>
 </html>
