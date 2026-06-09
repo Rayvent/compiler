@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>PyRun — Python в браузере</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #0e1117;
+    --surface:   #161b22;
+    --border:    #21262d;
+    --border2:   #30363d;
+    --text:      #e6edf3;
+    --muted:     #7d8590;
+    --accent:    #58a6ff;
+    --accent2:   #388bfd;
+    --green:     #3fb950;
+    --red:       #f85149;
+    --yellow:    #d29922;
+    --line-bg:   #1a2035;
+    --mono:      'JetBrains Mono', monospace;
+    --sans:      'Inter', sans-serif;
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    overflow: hidden;
+  }
+
+  /* ── TOP BAR ─────────────────────────────────────────── */
+  #topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    height: 48px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    gap: 12px;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-weight: 600;
+    font-size: 15px;
+    letter-spacing: -.3px;
+    color: var(--text);
+    white-space: nowrap;
+  }
+
+  .logo-icon {
+    width: 26px; height: 26px;
+    background: linear-gradient(135deg, #3a7bd5, #58a6ff);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--yellow);
+    transition: background .3s;
+    flex-shrink: 0;
+  }
+  .status-dot.ready   { background: var(--green); }
+  .status-dot.running { background: var(--accent); animation: pulse 1s infinite; }
+  .status-dot.error   { background: var(--red); }
+
+  @keyframes pulse {
+    0%,100% { opacity: 1; } 50% { opacity: .4; }
+  }
+
+  #status-text {
+    font-size: 12px;
+    color: var(--muted);
+    white-space: nowrap;
+    min-width: 70px;
+  }
+
+  /* ── RUN BUTTON ──────────────────────────────────────── */
+  #run-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 16px;
+    height: 34px;
+    background: var(--green);
+    border: none;
+    border-radius: 6px;
+    color: #0d1117;
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background .15s, transform .1s, opacity .15s;
+    flex-shrink: 0;
+    white-space: nowrap;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #run-btn:active  { transform: scale(.96); }
+  #run-btn:hover   { background: #46c757; }
+  #run-btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+  #run-btn svg { flex-shrink: 0; }
+
+  /* ── LAYOUT ──────────────────────────────────────────── */
+  #app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+
+  #main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    flex-direction: row;
+  }
+
+  /* ── EDITOR PANE ─────────────────────────────────────── */
+  #editor-pane {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    border-right: 1px solid var(--border);
+  }
+
+  .pane-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 14px;
+    height: 36px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .6px;
+  }
+
+  .pane-header-actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .icon-btn {
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 3px 6px;
+    font-size: 11px;
+    font-family: var(--sans);
+    transition: color .15s, border-color .15s, background .15s;
+    white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .icon-btn:hover {
+    color: var(--text);
+    border-color: var(--border2);
+    background: rgba(255,255,255,.04);
+  }
+
+  #editor-wrapper {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+    position: relative;
+  }
+
+  #line-numbers {
+    width: 44px;
+    flex-shrink: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    overflow: hidden;
+    padding: 14px 0;
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 22px;
+    color: var(--muted);
+    text-align: right;
+    padding-right: 10px;
+    user-select: none;
+  }
+
+  #editor {
+    flex: 1;
+    background: var(--bg);
+    border: none;
+    outline: none;
+    resize: none;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13.5px;
+    line-height: 22px;
+    padding: 14px 16px;
+    tab-size: 4;
+    overflow-y: scroll;
+    overflow-x: auto;
+    white-space: pre;
+    caret-color: var(--accent);
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y pan-x;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border2) transparent;
+  }
+
+  #editor::selection { background: rgba(88,166,255,.25); }
+
+  /* ── TERMINAL PANE ───────────────────────────────────── */
+  #terminal-pane {
+    width: 42%;
+    min-width: 200px;
+    display: flex;
+    flex-direction: column;
+    background: #0a0d13;
+  }
+
+  #terminal-output {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px 16px;
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.7;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border2) transparent;
+  }
+
+  .out-line { white-space: pre-wrap; word-break: break-word; }
+  .out-line.stdout { color: #c9d1d9; }
+  .out-line.stderr { color: var(--red); }
+  .out-line.system { color: var(--muted); font-style: italic; }
+  .out-line.success { color: var(--green); }
+  .out-line.info    { color: var(--accent); }
+  .out-line.timing  { color: var(--yellow); font-size: 11px; margin-top: 4px; }
+
+  #empty-terminal {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--muted);
+    font-size: 13px;
+    gap: 10px;
+    text-align: center;
+    padding: 20px;
+    user-select: none;
+  }
+
+  #empty-terminal svg { opacity: .3; }
+
+  /* ── MOBILE: stacked layout ──────────────────────────── */
+  @media (max-width: 640px) {
+    html, body { overflow: hidden; }
+
+    #main {
+      flex-direction: column;
+      position: relative;
+    }
+
+    #editor-pane {
+      border-right: none;
+      border-bottom: none;
+      flex: 1;
+    }
+
+    /* Terminal slides up from bottom as a sheet */
+    #terminal-pane {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      width: 100%;
+      min-width: 0;
+      height: 58vh;
+      border-radius: 14px 14px 0 0;
+      border-top: 1px solid var(--border2);
+      box-shadow: 0 -12px 48px rgba(0,0,0,.7);
+      transform: translateY(105%);
+      opacity: 0;
+      transition: transform .38s cubic-bezier(.32,.72,0,1), opacity .28s ease;
+      z-index: 100;
+    }
+
+    #terminal-pane.visible {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    #close-terminal-btn {
+      display: flex !important;
+    }
+
+    #editor { font-size: 13px; }
+    #terminal-output { font-size: 12px; }
+
+    #run-btn { padding: 0 14px; height: 36px; }
+
+    #mobile-kb {
+      display: flex !important;
+    }
+
+    #resize-handle { display: none; }
+  }
+
+  @media (min-width: 641px) {
+    #mobile-kb { display: none !important; }
+  }
+
+  /* ── MOBILE KEYBOARD TOOLBAR ─────────────────────────── */
+  #mobile-kb {
+    display: none;
+    align-items: center;
+    padding: 4px 8px;
+    gap: 4px;
+    background: #1c2128;
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    flex-shrink: 0;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  #mobile-kb::-webkit-scrollbar { display: none; }
+
+  .kb-btn {
+    flex-shrink: 0;
+    padding: 5px 10px;
+    border: 1px solid var(--border2);
+    border-radius: 5px;
+    background: var(--surface);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+    cursor: pointer;
+    transition: background .1s;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+  .kb-btn:active { background: var(--border2); }
+
+  /* ── RESIZE HANDLE ───────────────────────────────────── */
+  #resize-handle {
+    width: 4px;
+    background: var(--border);
+    cursor: col-resize;
+    flex-shrink: 0;
+    transition: background .2s;
+  }
+  #resize-handle:hover { background: var(--accent2); }
+
+  @media (max-width: 640px) {
+    #resize-handle { display: none; }
+  }
+
+  /* ── CLEAR BTN ───────────────────────────────────────── */
+  #clear-btn {
+    font-size: 11px;
+  }
+
+  /* ── SCROLLBAR ───────────────────────────────────────── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+  /* ── LOADING OVERLAY ─────────────────────────────────── */
+  #loading-overlay {
+    position: fixed; inset: 0;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    z-index: 999;
+    transition: opacity .4s;
+  }
+  #loading-overlay.hidden { opacity: 0; pointer-events: none; }
+
+  .loader-logo {
+    width: 52px; height: 52px;
+    background: linear-gradient(135deg, #3a7bd5, #58a6ff);
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px;
+    animation: bounce .9s infinite alternate ease-in-out;
+  }
+  @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-8px); } }
+
+  .loader-text {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .loader-bar {
+    width: 180px; height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .loader-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    animation: loadbar 2.5s ease-in-out forwards;
+  }
+  @keyframes loadbar {
+    0%   { width: 5%; }
+    40%  { width: 60%; }
+    80%  { width: 85%; }
+    100% { width: 95%; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Loading overlay -->
+<div id="loading-overlay">
+  <div class="loader-logo">🐍</div>
+  <div class="loader-text">Загрузка Python…</div>
+  <div class="loader-bar"><div class="loader-bar-fill"></div></div>
+</div>
+
+<div id="app">
+  <!-- Top bar -->
+  <div id="topbar">
+    <div class="logo">
+      <div class="logo-icon">🐍</div>
+      <span>PyRun</span>
+    </div>
+    <div class="topbar-right">
+      <div class="status-dot" id="status-dot"></div>
+      <span id="status-text">Загрузка…</span>
+      <button id="run-btn" disabled title="Запустить (Ctrl+Enter)">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M3 2.5l10 5.5-10 5.5V2.5z"/>
+        </svg>
+        Run
+      </button>
+    </div>
+  </div>
+
+  <!-- Main split -->
+  <div id="main">
+
+    <!-- Editor pane -->
+    <div id="editor-pane">
+      <div class="pane-header">
+        <span>main.py</span>
+        <div class="pane-header-actions">
+<button class="icon-btn" id="clear-editor-btn">Очистить</button>
+        </div>
+      </div>
+
+      <!-- Mobile keyboard toolbar -->
+      <div id="mobile-kb"></div>
+
+      <div id="editor-wrapper">
+        <div id="line-numbers">1</div>
+        <textarea id="editor" spellcheck="false" autocorrect="off" autocapitalize="off" autocomplete="off"
+          placeholder="# Напишите Python-код здесь…
+print('Hello, World!')"
+        ></textarea>
+      </div>
+    </div>
+
+    <!-- Resize handle -->
+    <div id="resize-handle"></div>
+
+    <!-- Terminal pane -->
+    <div id="terminal-pane">
+      <div class="pane-header">
+        <span>Вывод</span>
+        <div class="pane-header-actions">
+          <button class="icon-btn" id="clear-btn">Очистить</button>
+          <button class="icon-btn" id="close-terminal-btn" style="display:none;" title="Закрыть">✕</button>
+        </div>
+      </div>
+      <div id="terminal-output">
+        <div id="empty-terminal">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <polyline points="4 17 10 11 4 5"></polyline>
+            <line x1="12" y1="19" x2="20" y2="19"></line>
+          </svg>
+          <span>Нажмите Run или Ctrl+Enter<br>чтобы запустить код</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Pyodide -->
+<script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
+<script>
+/* ── STATE ── */
+let pyodide = null;
+let isRunning = false;
+
+const editor        = document.getElementById('editor');
+const runBtn        = document.getElementById('run-btn');
+const statusDot     = document.getElementById('status-dot');
+const statusText    = document.getElementById('status-text');
+const termOut       = document.getElementById('terminal-output');
+const lineNumbers   = document.getElementById('line-numbers');
+const emptyTerminal = document.getElementById('empty-terminal');
+const loadingOverlay= document.getElementById('loading-overlay');
+const mobileKb      = document.getElementById('mobile-kb');
+
+/* ── MOBILE KEYBOARD SHORTCUTS ── */
+const tabBtn = document.createElement('button');
+tabBtn.className = 'kb-btn';
+tabBtn.textContent = 'Tab →';
+tabBtn.style.cssText = 'font-weight:600; padding: 5px 18px;';
+tabBtn.addEventListener('click', () => { insertAtCursor('    '); editor.focus(); });
+mobileKb.appendChild(tabBtn);
+
+/* ── LINE NUMBERS ── */
+function updateLineNumbers() {
+  const lines = editor.value.split('\n');
+  lineNumbers.innerHTML = lines.map((_, i) => i + 1).join('<br>');
+  // sync scroll
+  lineNumbers.scrollTop = editor.scrollTop;
+}
+
+editor.addEventListener('input', updateLineNumbers);
+editor.addEventListener('scroll', () => { lineNumbers.scrollTop = editor.scrollTop; });
+updateLineNumbers();
+
+/* ── TAB KEY & AUTO-INDENT ── */
+editor.addEventListener('keydown', e => {
+  // Tab → 4 spaces
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    const s = editor.selectionStart, end = editor.selectionEnd;
+    if (s === end) {
+      insertAtCursor('    ');
+    } else {
+      // indent block
+      const val = editor.value;
+      const lsStart = val.lastIndexOf('\n', s - 1) + 1;
+      const lsEnd = val.indexOf('\n', end);
+      const block = val.slice(lsStart, lsEnd === -1 ? undefined : lsEnd);
+      const indented = block.split('\n').map(l => '    ' + l).join('\n');
+      editor.value = val.slice(0, lsStart) + indented + val.slice(lsEnd === -1 ? val.length : lsEnd);
+      editor.selectionStart = lsStart;
+      editor.selectionEnd = lsStart + indented.length;
+    }
+    updateLineNumbers();
+    return;
+  }
+
+  // Ctrl/Cmd+Enter → run
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    e.preventDefault();
+    runCode();
+    return;
+  }
+
+  // Enter → auto-indent
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const s = editor.selectionStart;
+    const val = editor.value;
+    const lineStart = val.lastIndexOf('\n', s - 1) + 1;
+    const currentLine = val.slice(lineStart, s);
+    const indent = currentLine.match(/^(\s*)/)[1];
+    const extraIndent = currentLine.trimEnd().endsWith(':') ? '    ' : '';
+    insertAtCursor('\n' + indent + extraIndent);
+    updateLineNumbers();
+    return;
+  }
+
+  // Backspace on 4 spaces
+  if (e.key === 'Backspace') {
+    const s = editor.selectionStart, end = editor.selectionEnd;
+    if (s === end && s >= 4) {
+      const before = editor.value.slice(s - 4, s);
+      if (before === '    ') {
+        e.preventDefault();
+        editor.value = editor.value.slice(0, s - 4) + editor.value.slice(s);
+        editor.selectionStart = editor.selectionEnd = s - 4;
+        updateLineNumbers();
+      }
+    }
+  }
+});
+
+function insertAtCursor(text) {
+  const s = editor.selectionStart, e2 = editor.selectionEnd;
+  editor.value = editor.value.slice(0, s) + text + editor.value.slice(e2);
+  editor.selectionStart = editor.selectionEnd = s + text.length;
+  updateLineNumbers();
+}
+
+function wrapSelection(open, close) {
+  const s = editor.selectionStart, e2 = editor.selectionEnd;
+  const selected = editor.value.slice(s, e2);
+  const replacement = open + selected + close;
+  editor.value = editor.value.slice(0, s) + replacement + editor.value.slice(e2);
+  editor.selectionStart = s + open.length;
+  editor.selectionEnd = s + open.length + selected.length;
+}
+
+/* ── TERMINAL OUTPUT ── */
+const termPane = document.getElementById('terminal-pane');
+const isMobile = () => window.innerWidth <= 640;
+
+function openTerminal() {
+  if (isMobile()) {
+    termPane.classList.add('visible');
+  }
+}
+
+function closeTerminal() {
+  termPane.classList.remove('visible');
+}
+
+function clearTerminal() {
+  termOut.innerHTML = '';
+  termOut.appendChild(emptyTerminal);
+  emptyTerminal.style.display = 'flex';
+}
+
+function appendLine(text, cls) {
+  if (emptyTerminal.parentNode === termOut) {
+    emptyTerminal.style.display = 'none';
+    emptyTerminal.remove();
+  }
+  const d = document.createElement('div');
+  d.className = 'out-line ' + cls;
+  d.textContent = text;
+  termOut.appendChild(d);
+  termOut.scrollTop = termOut.scrollHeight;
+}
+
+function setStatus(state, text) {
+  statusDot.className = 'status-dot ' + state;
+  statusText.textContent = text;
+}
+
+/* ── LOAD PYODIDE ── */
+async function loadPy() {
+  try {
+    pyodide = await loadPyodide();
+    // redirect stdout/stderr
+    pyodide.runPython(`
+import sys, io
+class _Out:
+    def __init__(self, tag): self._t = tag; self._buf = ''
+    def write(self, s):
+        import js
+        for line in s.split('\\n'):
+            js.appendOutputLine(line, self._t)
+    def flush(self): pass
+sys.stdout = _Out('stdout')
+sys.stderr = _Out('stderr')
+`);
+    setStatus('ready', 'Готово');
+    runBtn.disabled = false;
+    loadingOverlay.classList.add('hidden');
+    setTimeout(() => loadingOverlay.remove(), 500);
+  } catch(err) {
+    setStatus('error', 'Ошибка загрузки');
+    document.querySelector('.loader-text').textContent = 'Ошибка: ' + err.message;
+  }
+}
+
+// expose to Python
+window.appendOutputLine = function(text, cls) {
+  if (text !== '') appendLine(text, cls);
+};
+
+/* ── RUN CODE ── */
+async function runCode() {
+  if (!pyodide || isRunning) return;
+  const code = editor.value.trim();
+  if (!code) return;
+
+  isRunning = true;
+  runBtn.disabled = true;
+  setStatus('running', 'Выполняется…');
+
+  clearTerminal();
+  openTerminal();
+  appendLine('$ python main.py', 'system');
+
+  const t0 = performance.now();
+
+  try {
+    await pyodide.runPythonAsync(code);
+    const ms = (performance.now() - t0).toFixed(1);
+    appendLine('', 'stdout');
+    appendLine('✓ Завершено за ' + ms + ' мс', 'timing');
+    setStatus('ready', 'Готово');
+  } catch(err) {
+    const ms = (performance.now() - t0).toFixed(1);
+    const msg = err.message || String(err);
+    // split traceback lines
+    msg.split('\n').forEach(l => {
+      if (l.trim()) appendLine(l, 'stderr');
+    });
+    appendLine('', 'stderr');
+    appendLine('✗ Завершено с ошибкой за ' + ms + ' мс', 'timing');
+    setStatus('error', 'Ошибка');
+  } finally {
+    isRunning = false;
+    runBtn.disabled = false;
+  }
+}
+
+/* ── BUTTONS ── */
+runBtn.addEventListener('click', runCode);
+
+document.getElementById('clear-btn').addEventListener('click', clearTerminal);
+
+document.getElementById('close-terminal-btn').addEventListener('click', () => {
+  closeTerminal();
+});
+
+
+document.getElementById('clear-editor-btn').addEventListener('click', () => {
+  editor.value = '';
+  updateLineNumbers();
+  editor.focus();
+});
+
+
+/* ── DRAG RESIZE (desktop) ── */
+const handle = document.getElementById('resize-handle');
+const edPane = document.getElementById('editor-pane');
+
+let dragging = false, startX, startEdW, startTermW;
+
+handle.addEventListener('mousedown', e => {
+  dragging = true;
+  startX = e.clientX;
+  startEdW = edPane.getBoundingClientRect().width;
+  startTermW = termPane.getBoundingClientRect().width;
+  document.body.style.cursor = 'col-resize';
+  document.body.style.userSelect = 'none';
+});
+
+window.addEventListener('mousemove', e => {
+  if (!dragging) return;
+  const dx = e.clientX - startX;
+  const total = startEdW + startTermW;
+  const newEd = Math.max(200, Math.min(total - 200, startEdW + dx));
+  edPane.style.flex = 'none';
+  edPane.style.width = newEd + 'px';
+  termPane.style.width = (total - newEd) + 'px';
+});
+
+window.addEventListener('mouseup', () => {
+  if (dragging) {
+    dragging = false;
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  }
+});
+
+/* ── BOOT ── */
+loadPy();
+</script>
+</body>
+</html>
