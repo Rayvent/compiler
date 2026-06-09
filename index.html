@@ -696,14 +696,14 @@
       fileName.textContent = `Добавлен: ${file.name}`;
       filePanel.classList.add("show");
 
+      showConsole(
+        `Файл "${file.name}" добавлен.`,
+        false
+      );
+
       fileInput.value = "";
       setAppHeight();
     };
-    showConsole(
-      `Файл "${file.name}" добавлен.`,
-      false
-    );
-    
 
     deleteFileBtn.onclick = () => {
       if (pyodide && currentFileName) {
